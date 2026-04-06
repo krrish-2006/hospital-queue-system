@@ -26,7 +26,7 @@ app.use(passport.session());
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-mongoose.connect('mongodb://127.0.0.1:27017/hospitalQueue')
+mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("MongoDB Connected"));
 
 passport.use(new GoogleStrategy({
