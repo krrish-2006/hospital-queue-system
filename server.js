@@ -32,7 +32,7 @@ mongoose.connect(process.env.MONGO_URI)
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "http://localhost:3000/auth/google/callback"
+    callbackURL: "https://hospital-queue-system-ypl0.onrender.com"
 },
 (accessToken, refreshToken, profile, done) => {
     return done(null, profile);
@@ -148,4 +148,8 @@ app.get('/logout', (req, res) => {
     });
 });
 
-server.listen(3000, () => console.log("Server running"));
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+    console.log("Server running on port " + PORT);
+});
