@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Hospital Queue</title>
+
+<style>
+body {
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #333;
+}
+
+.container {
+    max-width: 500px;
+    margin: 30px auto;
+}
+
+.card {
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(10px);
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+h2 {
+    margin-top: 0;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+button:hover {
+    transform: scale(1.03);
+}
+
+.book-btn {
+    background: #00c9a7;
+    color: white;
+}
+
+.next-btn {
+    background: #ff4d4d;
+    color: white;
+}
+
+.cancel-btn {
+    background: #ffc107;
+    color: black;
+    width: auto;
+    padding: 5px 10px;
+}
+
+.queue-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-radius: 10px;
+    margin-top: 8px;
+    background: white;
+}
+
+.queue-item:hover {
+    background: #f1f3f6;
+}
+
+.me {
+    background: #ffeeba !important;
+}
+
+.now {
+    background: #ff4d4d !important;
+    color: white;
+    font-weight: bold;
+}
+
+#nowServing {
+    text-align: center;
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #ff4d4d;
+    font-weight: bold;
+}
+/* ✨ ENTRY ANIMATION */
+@keyframes fadeSlide {
+    from {
+        opacity: 0;
+        transform: translateY(15px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 🟢 NEW PATIENT HIGHLIGHT */
+@keyframes glow {
+    0% { background: #d4edda; }
+    100% { background: white; }
+}
+
+.new {
+    animation: fadeSlide 0.4s ease forwards, glow 1s ease;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+    <button onclick="loginGoogle()">🔐 Login with Google</button>
+    <h2>📅 Book Appointment</h2>
+
+    <input id="name" placeholder="Enter your name">
+
+    <select id="doctor">
+        <option value="Pulmonologist">Pulmonologist</option>
+        <option value="Cardiologist">Cardiologist</option>
+    </select>
+
+    <button class="book-btn" onclick="book()">Book Now</button>
+
+    <h3 id="result"></h3>
+</div>
+
+<div class="card">
+    <h2>🩺 Live Queue</h2>
+
+    <div id="nowServing"></div>
+
+    <button class="next-btn" onclick="nextPatient()">Next Patient</button>
+
+    <select id="doctorQueue">
+        <option value="Pulmonologist">Pulmonologist</option>
+        <option value="Cardiologist">Cardiologist</option>
+    </select>
+
+    <ul id="queueList" style="list-style:none; padding:0;"></ul>
+</div>
+
+</div>
+
+<script src="http://localhost:3000/socket.io/socket.io.js"></script>
+
+<script>
+const socket = io("http://localhost:3000");
+
+let currentDoctor = document.getElementById('doctorQueue').value;
+
+// 🔐 CHECK USER (LOGIN)
+async function checkUser() {
+    const res = await fetch('http://localhost:3000/user', {
+        credentials: 'include'
+    });
+    const user = await res.json();
+
+    if (user) {
+        document.getElementById('name').value = user.displayName;
+        document.getElementById('name').disabled = true;
+        document.getElementById('name').style.display = "none";
+
+        document.getElementById('result').innerText =
+            "Logged in as: " + user.displayName;
+        window.loggedInEmail = user.emails[0].value;
+    } else {
+        document.getElementById('result').innerText =
+            "Not logged in ❌";
+    }
+}
+
+// 📥 LOAD QUEUE
+async function loadInitial() {
+    const res = await fetch(`http://localhost:3000/queue/${currentDoctor}`, {
+        credentials: 'include'
+    });
+    const data = await res.json();
+    renderQueue(data);
+}
+
+// 🔄 SOCKET UPDATE
+socket.onAny((event, data) => {
+    if (event === `queue-${currentDoctor}`) {
+        renderQueue(data);
+    }
+});
+function loginGoogle() {
+    window.location.href = "http://localhost:3000/auth/google";
+}
+
+// 📅 BOOK (ONLY IF LOGGED IN)
+async function book() {
+
+    // 🔐 check login
+    const resUser = await fetch('http://localhost:3000/user', {
+        credentials: 'include'
+    });
+    const user = await resUser.json();
+
+    if (!user) {
+        alert("Please login first");
+        return;
+    }
+
+    const doctor = document.getElementById('doctor').value;
+
+    const res = await fetch('http://localhost:3000/book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ doctor })
+    });
+
+    const data = await res.json();
+
+    document.getElementById('result').innerText =
+        `Token Number: ${data.token}`;
+
+    await loadInitial();
+}
+
+// 🎨 RENDER QUEUE
+function renderQueue(data) {
+    const list = document.getElementById('queueList');
+    list.innerHTML = "";
+
+    document.getElementById('nowServing').innerText =
+        data.length ? "Now Serving: " + data[0].token : "No patients";
+
+    data.forEach((p, index) => {
+        const li = document.createElement('li');
+        li.classList.add("queue-item");
+
+        if (index === 0) li.classList.add("now");
+
+        const text = document.createElement('span');
+
+        // ✅ FIXED BLOCK (no extra bracket)
+        if (p.email === window.loggedInEmail) {
+            text.innerText = `${p.token} - ${p.name} (You)`;
+        } else {
+            text.innerText = `${p.token} - ${p.name}`;
+        }
+
+        li.appendChild(text);
+
+        // 🔥 CANCEL BUTTON
+        if (p.email === window.loggedInEmail) {
+            const btn = document.createElement('button');
+            btn.innerText = "Cancel";
+            btn.classList.add("cancel-btn");
+
+            btn.onclick = () => cancelBooking(p._id);
+
+            li.appendChild(btn);
+        }
+
+        list.appendChild(li);
+    });
+}
+// ⏭ NEXT
+async function nextPatient() {
+    await fetch(`http://localhost:3000/next/${currentDoctor}`, {
+        method: 'POST',
+        credentials: 'include'
+    });
+}
+
+// ❌ CANCEL
+async function cancelBooking(id) {
+    await fetch('http://localhost:3000/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id, doctor: currentDoctor })
+    });
+}
+
+
+// 🔁 CHANGE DOCTOR
+document.getElementById('doctorQueue').addEventListener('change', (e) => {
+    currentDoctor = e.target.value;
+    loadInitial();
+});
+
+// 🚀 RUN ON LOAD
+checkUser();
+loadInitial();
+
+</script>
+
+</body>
+</html>
