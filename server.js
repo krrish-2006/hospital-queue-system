@@ -11,13 +11,22 @@ require('dotenv').config();
 const app = express();
 app.use(express.json());
 app.use(cors({
-    origin: "http://localhost:5500",
-    credentials: true
+    origin: [
+    "http://localhost:5500",
+    "https://your-app-name.onrender.com"
+],
+credentials: true
 }));
+app.set('trust proxy', 1);
+
 app.use(session({
     secret: 'secret123',
     resave: false,
-    saveUninitialized: true
+    saveUninitialized: true,
+    cookie: {
+        secure: true,
+        sameSite: "none"
+    }
 }));
 
 app.use(passport.initialize());
