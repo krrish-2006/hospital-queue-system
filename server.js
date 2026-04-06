@@ -9,6 +9,9 @@ const { Server } = require('socket.io');
 require('dotenv').config();
 
 const app = express();
+app.get('/test', (req, res) => {
+    res.send("TEST WORKING");
+});
 app.use(express.json());
 app.use(cors({
     origin: [
@@ -157,8 +160,11 @@ app.get('/logout', (req, res) => {
     });
 });
 
+app.get('/user', (req, res) => {
+    console.log("USER ROUTE HIT");
+    res.json(req.user || null);
+});
 
-const PORT = process.env.PORT || 3000;
 
 const path = require('path');
 
@@ -168,6 +174,8 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-server.listen(PORT, "0.0.0.0", () => {
+const PORT = process.env.PORT;
+
+server.listen(PORT, () => {
     console.log("Server running on port " + PORT);
 });
