@@ -40,7 +40,10 @@ app.use(passport.session());
 
 // DB
 mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("MongoDB Connected"));
+.then(() => console.log("MongoDB Connected"))
+.catch(err => {
+    console.error("MongoDB Error:", err);
+});
 
 // GOOGLE AUTH
 passport.use(new GoogleStrategy({
