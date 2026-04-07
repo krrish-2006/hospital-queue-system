@@ -97,7 +97,7 @@ let currentDoctor = document.getElementById('doctorQueue').value;
 
 // 🔐 LOGIN
 function loginGoogle() {
-    window.location.href = `${API}/auth/google`;
+    window.location.href = "https://hospital-queue-system-ypl0.onrender.com/auth/google";
 }
 
 // 🔐 CHECK USER
@@ -135,14 +135,10 @@ async function book() {
     const resUser = await fetch(`${API}/user`, { credentials: 'include' });
     const user = await resUser.json();
 
-    if (!user) {
-        alert("Please login first");
-        return;
-    }
 
     const doctor = document.getElementById('doctor').value;
 
-    const res = await fetch(`${API}/book`, {
+    const res = await fetch('https://hospital-queue-system-ypl0.onrender.com/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
