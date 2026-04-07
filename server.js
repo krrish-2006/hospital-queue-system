@@ -1,20 +1,23 @@
-const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const session = require('express-session');
+require('dotenv').config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const session = require('express-session');
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const http = require('http');
 const { Server } = require('socket.io');
-require('dotenv').config();
+const path = require('path');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
 
-// TEST ROUTE
-app.get('/test', (req, res) => {
-    res.send("TEST WORKING");
-});
+/* ================= MIDDLEWARE ================= */
 
 app.use(express.json());
+
 app.use(cors({
     origin: [
         "http://localhost:5500",
@@ -38,14 +41,14 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// DB
+/* ================= DATABASE ================= */
+
 mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("MongoDB Connected"))
-.catch(err => {
-    console.error("MongoDB Error:", err);
-});
+.catch(err => console.error("MongoDB Error:", err));
 
-// GOOGLE AUTH
+/* ================= PASSPORT ================= */
+
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
@@ -58,7 +61,8 @@ passport.use(new GoogleStrategy({
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
-// MODEL
+/* ================= MODEL ================= */
+
 const Patient = mongoose.model('Patient', {
     name: String,
     email: String,
@@ -66,89 +70,120 @@ const Patient = mongoose.model('Patient', {
     token: Number
 });
 
-// SOCKET WILL BE SET AFTER SERVER START
-let io;
+/* ================= SOCKET ================= */
 
-// SEND QUEUE
 async function sendQueue(doctor) {
     const data = await Patient.find({ doctor }).sort({ token: 1 });
     io.emit(`queue-${doctor}`, data);
 }
 
-// ROUTES
-app.post('/book', async (req, res) => {
-    if (!req.user) return res.status(401).json({ error: "Login required" });
+/* ================= ROUTES ================= */
 
-    const name = req.user.displayName;
-    const email = req.user.emails[0].value;
+// TEST
+app.get('/test', (req, res) => {
+    res.send("TEST WORKING");
+});
+
+// GOOGLE LOGIN
+app.get('/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+// CALLBACK
+app.get('/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/' }),
+    (req, res) => {
+        res.redirect('/');
+    }
+);
+
+// GET USER
+app.get('/user', (req, res) => {
+    res.json(req.user || null);
+});
+
+// BOOK
+app.post('/book', async (req, res) => {
+    const user = req.user;
+
+    if (!user) return res.status(401).json({ error: "Login required" });
+
+    const name = user.displayName;
+    const email = user.emails[0].value;
     const { doctor } = req.body;
 
-    const last = await Patient.find({ doctor }).sort({ token: -1 }).limit(1);
+    const last = await Patient.find({ doctor })
+        .sort({ token: -1 })
+        .limit(1);
+
     const token = last.length ? last[0].token + 1 : 1;
 
     const p = new Patient({ name, email, doctor, token });
     await p.save();
 
     await sendQueue(doctor);
+
     res.json({ token, id: p._id });
 });
 
+// GET QUEUE
 app.get('/queue/:doctor', async (req, res) => {
-    const data = await Patient.find({ doctor: req.params.doctor }).sort({ token: 1 });
+    const data = await Patient.find({ doctor: req.params.doctor })
+        .sort({ token: 1 });
+
     res.json(data);
 });
 
+// NEXT
 app.post('/next/:doctor', async (req, res) => {
-    const first = await Patient.findOne({ doctor: req.params.doctor }).sort({ token: 1 });
-    if (first) await Patient.deleteOne({ _id: first._id });
+    const doctor = req.params.doctor;
 
-    await sendQueue(req.params.doctor);
-    res.json({});
-});
+    const first = await Patient.findOne({ doctor }).sort({ token: 1 });
 
-app.post('/cancel', async (req, res) => {
-    if (!req.user) return res.status(401).json({ error: "Login required" });
+    if (first) {
+        await Patient.deleteOne({ _id: first._id });
+    }
 
-    const email = req.user.emails[0].value;
-    const { id, doctor } = req.body;
-
-    await Patient.deleteOne({ _id: id, email });
     await sendQueue(doctor);
 
     res.json({});
 });
 
-// AUTH
-app.get('/auth/google',
-    passport.authenticate('google', { scope: ['profile', 'email'] })
-);
+// CANCEL
+app.post('/cancel', async (req, res) => {
+    const user = req.user;
 
-app.get('/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/' }),
-    (req, res) => res.redirect('/')
-);
+    if (!user) return res.status(401).json({ error: "Login required" });
 
-app.get('/user', (req, res) => {
-    console.log("USER ROUTE HIT");
-    res.json(req.user || null);
+    const email = user.emails[0].value;
+    const { id, doctor } = req.body;
+
+    await Patient.deleteOne({ _id: id, email });
+
+    await sendQueue(doctor);
+
+    res.json({});
 });
 
+// LOGOUT
 app.get('/logout', (req, res) => {
-    req.logout(() => res.redirect('/'));
+    req.logout(() => {
+        res.redirect('/');
+    });
 });
 
-// STATIC
-const path = require('path');
+/* ================= STATIC ================= */
+
 app.use(express.static(__dirname));
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 🔥 START SERVER (ONLY ONCE)
-const server = app.listen(process.env.PORT, () => {
-    console.log("Server running on port " + process.env.PORT);
-});
+/* ================= SERVER ================= */
 
-// SOCKET
-io = new Server(server, { cors: { origin: "*" } });
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+    console.log("Server running on port " + PORT);
+});
