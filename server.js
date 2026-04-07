@@ -4,8 +4,13 @@ const session = require('express-session');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const http = require('http');
 const { Server } = require('socket.io');
+
+const server = app.listen(process.env.PORT, () => {
+    console.log("Server running on port " + process.env.PORT);
+});
+
+const io = new Server(server, { cors: { origin: "*" } });
 require('dotenv').config();
 
 const app = express();
@@ -35,8 +40,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+
 
 mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("MongoDB Connected"));
@@ -173,9 +177,9 @@ app.use(express.static(__dirname));
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
-
-const PORT = process.env.PORT;
-
-server.listen(PORT, () => {
-    console.log("Server running on port " + PORT);
+// 🔥 FINAL LISTEN
+const server = app.listen(process.env.PORT, () => {
+    console.log("Server running on port " + process.env.PORT);
 });
+
+const io = new Server(server, { cors: { origin: "*" } });
