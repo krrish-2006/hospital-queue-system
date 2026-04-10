@@ -2,6 +2,7 @@
 console.log("🔥 SERVER FILE IS RUNNING");
 require('dotenv').config();
 
+const DOCTOR_EMAIL = "krrishjgd@gmail.com"; // 👈 put your email
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -138,6 +139,17 @@ app.get('/queue/:doctor', async (req, res) => {
 
 // NEXT
 app.post('/next/:doctor', async (req, res) => {
+
+    const user = req.user;
+
+    if (!user) return res.status(401).json({ error: "Login required" });
+
+    const email = user.emails[0].value;
+
+    if (email !== "krrishjgd@gmail.com") {
+        return res.status(403).json({ error: "Only doctor allowed" });
+    }
+
     const doctor = req.params.doctor;
 
     const first = await Patient.findOne({ doctor }).sort({ token: 1 });
