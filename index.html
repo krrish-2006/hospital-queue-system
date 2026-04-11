@@ -142,8 +142,9 @@
         box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.12);
     }
 
-    .hero-copy h1 {
-        margin: 20px 0 18px;
+    .hero-copy h1,
+    .hero-copy p {
+        margin: 0;
         font-size: clamp(2.6rem, 6vw, 5.2rem);
         line-height: 0.98;
         letter-spacing: -0.05em;
@@ -151,11 +152,8 @@
     }
 
     .hero-copy p {
-        margin: 0;
-        max-width: 420px;
-        font-size: 1.05rem;
-        line-height: 1.7;
-        color: var(--muted);
+        margin-bottom: 12px;
+        color: rgba(15, 23, 32, 0.72);
     }
 
     .login-panel {
@@ -546,6 +544,16 @@
         border: 1px solid rgba(15, 23, 32, 0.05);
     }
 
+    .name-line {
+        margin: 0;
+        font-size: 1rem;
+        color: var(--text);
+    }
+
+    .name-line span {
+        color: var(--muted);
+    }
+
     .queue-panel-top {
         display: flex;
         justify-content: space-between;
@@ -614,8 +622,8 @@
         <div id="loginScreen" class="login-shell">
             <section class="hero-panel">
                 <div class="hero-copy">
-                    <h1>Care access, refined for modern clinics.</h1>
                     <p>Modernized hospital booking.</p>
+                    <h1>Care access, refined for modern clinics.</h1>
                 </div>
             </section>
 
@@ -629,7 +637,6 @@
                 </div>
 
                 <div class="login-card">
-                    <h2>Continue with Google</h2>
                     <button class="google-button" onclick="loginGoogle()">
                         <span class="google-mark">G</span>
                         Continue with Google
@@ -656,7 +663,6 @@
 
                     <div class="app-hero-copy">
                         <h2>Book with clarity. Track with ease.</h2>
-                        <p id="appSubtitle">Appointments and live queue.</p>
                     </div>
                 </section>
 
@@ -669,8 +675,7 @@
 
                         <div class="booking-stack">
                             <div class="booking-meta">
-                                <label for="name">Name</label>
-                                <input id="name" placeholder="Patient name" readonly>
+                                <p id="nameLine" class="name-line"><span>Name - </span>Patient Name</p>
                             </div>
 
                             <div class="booking-meta">
@@ -741,7 +746,7 @@ async function refreshBookingState() {
 
     userBookings = queues
         .flat()
-        .filter((patient) => patient?.email && patient.email === window.loggedInEmail);
+        .filter((patient) => patient?.isOwner);
 
     updateBookingUI();
 }
@@ -764,15 +769,14 @@ function updateBookingUI() {
 
 function setAuthenticatedUI(user) {
     const email = user?.emails?.[0]?.value || "";
-    const displayName = getNameFromEmail(email);
+    const displayName = user?.displayName || getNameFromEmail(email);
 
     window.loggedInEmail = email;
 
     document.getElementById("loginScreen").style.display = "none";
     document.getElementById("app").style.display = "grid";
     document.getElementById("userBadge").innerText = email || "Signed in";
-    document.getElementById("appSubtitle").innerText = displayName;
-    document.getElementById("name").value = displayName;
+    document.getElementById("nameLine").innerHTML = `<span>Name - </span>${displayName}`;
     document.getElementById("nextBtn").style.display = email === DOCTOR_EMAIL ? "block" : "none";
     refreshBookingState().finally(loadQueue);
 }
@@ -866,6 +870,8 @@ async function cancelBooking(id) {
             throw new Error(data.error || "Unable to cancel booking");
         }
 
+        userBookings = [];
+        updateBookingUI();
         document.getElementById("result").innerText = "Booking cancelled.";
         await refreshBookingState();
         loadQueue();
@@ -901,12 +907,14 @@ async function loadQueue() {
 
             const text = document.createElement("div");
             text.className = "queue-text";
-            const patientName = patient.email ? getNameFromEmail(patient.email) : (patient.name || "Patient");
-            text.innerHTML = `<strong>Token ${patient.token} - ${patientName}</strong><span>${index === 0 ? "Now serving" : "Waiting in queue"}</span>`;
+            const tokenLabel = patient.isOwner && patient.name
+                ? `Token ${patient.token} - ${patient.name}`
+                : `Token ${patient.token}`;
+            text.innerHTML = `<strong>${tokenLabel}</strong><span>${index === 0 ? "Now serving" : "Waiting in queue"}</span>`;
 
             li.appendChild(text);
 
-            const canCancel = patient.email && patient.email === window.loggedInEmail;
+            const canCancel = Boolean(patient.isOwner);
 
             if (canCancel) {
                 const btn = document.createElement("button");

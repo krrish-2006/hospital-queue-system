@@ -115,6 +115,11 @@ app.post('/book', async (req, res) => {
     const email = user.emails[0].value;
     const { doctor } = req.body;
 
+    const existingBooking = await Patient.findOne({ email });
+    if (existingBooking) {
+        return res.status(409).json({ error: "Booking already active" });
+    }
+
     const last = await Patient.find({ doctor })
         .sort({ token: -1 })
         .limit(1);
@@ -131,10 +136,20 @@ app.post('/book', async (req, res) => {
 
 // GET QUEUE
 app.get('/queue/:doctor', async (req, res) => {
+    const viewerEmail = req.user?.emails?.[0]?.value || null;
     const data = await Patient.find({ doctor: req.params.doctor })
         .sort({ token: 1 });
 
-    res.json(data);
+    res.json(data.map((patient) => {
+        const isOwner = viewerEmail && patient.email === viewerEmail;
+
+        return {
+            _id: patient._id,
+            token: patient.token,
+            isOwner,
+            name: isOwner ? patient.name : null
+        };
+    }));
 });
 
 // NEXT
@@ -172,11 +187,11 @@ app.post('/cancel', async (req, res) => {
     const email = user.emails[0].value;
     const { id, doctor } = req.body;
 
-    await Patient.deleteOne({ _id: id, email });
+    const result = await Patient.deleteOne({ _id: id, email });
 
     await sendQueue(doctor);
 
-    res.json({});
+    res.json({ deletedCount: result.deletedCount });
 });
 
 // LOGOUT
