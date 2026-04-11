@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hospital Queue</title>
+<title>Book My Doctor</title>
 <style>
     :root {
         --bg: #f5f6f8;
@@ -448,11 +448,11 @@
 
     .title {
         margin: 0;
-        font-size: 1.1rem;
-        letter-spacing: -0.03em;
+        font-size: 2.2rem;
+        line-height: 0.98;
+        letter-spacing: -0.06em;
         font-weight: 600;
-        color: var(--muted);
-        text-transform: uppercase;
+        color: var(--text);
     }
 
     .subtle {
@@ -537,8 +537,8 @@
 
     .cancel-btn {
         width: auto;
-        background: rgba(250, 204, 21, 0.2);
-        color: #7c5d00;
+        background: #dc2626;
+        color: #ffffff;
         padding: 10px 14px;
     }
 
@@ -716,7 +716,7 @@
                 <div class="brand">
                     <div class="brand-mark">HQ</div>
                     <div>
-                        <strong>Hospital Queue</strong>
+                        <strong>Book My Doctor</strong>
                         <small>Smart access for patients and staff</small>
                     </div>
                     <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode" title="Toggle dark mode">☾</button>
@@ -738,7 +738,7 @@
                         <div class="app-nav-brand">
                             <div class="brand-mark">HQ</div>
                             <div>
-                                <strong>Hospital Queue</strong>
+                                <strong>Book My Doctor</strong>
                                 <span id="userBadge">Not signed in</span>
                             </div>
                         </div>
@@ -748,9 +748,6 @@
                         </div>
                     </div>
 
-                    <div class="app-hero-copy">
-                        <h2>Book with clarity. Track with ease.</h2>
-                    </div>
                 </section>
 
                 <div class="dashboard-grid">
@@ -807,7 +804,7 @@ function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
 
     document.querySelectorAll(".theme-toggle").forEach((button) => {
-        button.innerText = theme === "dark" ? "☀" : "☾";
+        button.innerText = theme === "dark" ? "☼" : "☾";
     });
 }
 
@@ -865,7 +862,7 @@ function setAuthenticatedUI(user) {
 
     document.getElementById("loginScreen").style.display = "none";
     document.getElementById("app").style.display = "grid";
-    document.getElementById("userBadge").innerText = "Signed in";
+    document.getElementById("userBadge").innerText = `${email}  Signed in`;
     document.getElementById("nameLine").innerHTML = `<span>Name - </span>${displayName}`;
     document.getElementById("nextBtn").style.display = email === DOCTOR_EMAIL ? "block" : "none";
     refreshBookingState().finally(loadQueue);
@@ -1030,7 +1027,7 @@ function logout() {
     });
 }
 
-applyTheme(localStorage.getItem("theme") || "light");
+applyTheme(localStorage.getItem("theme") || "dark");
 checkUser();
 </script>
 </body>
