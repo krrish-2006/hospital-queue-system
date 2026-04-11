@@ -720,17 +720,6 @@ function loginGoogle() {
     window.location.href = `${API}/auth/google`;
 }
 
-function getNameFromEmail(email) {
-    if (!email || !email.includes("@")) {
-        return "Patient";
-    }
-
-    return email
-        .split("@")[0]
-        .replace(/[._-]+/g, " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
 function getSelectedDoctor() {
     return document.getElementById("doctor").value;
 }
@@ -769,13 +758,13 @@ function updateBookingUI() {
 
 function setAuthenticatedUI(user) {
     const email = user?.emails?.[0]?.value || "";
-    const displayName = user?.displayName || getNameFromEmail(email);
+    const displayName = user?.displayName || "Patient";
 
     window.loggedInEmail = email;
 
     document.getElementById("loginScreen").style.display = "none";
     document.getElementById("app").style.display = "grid";
-    document.getElementById("userBadge").innerText = email || "Signed in";
+    document.getElementById("userBadge").innerText = "Signed in";
     document.getElementById("nameLine").innerHTML = `<span>Name - </span>${displayName}`;
     document.getElementById("nextBtn").style.display = email === DOCTOR_EMAIL ? "block" : "none";
     refreshBookingState().finally(loadQueue);
