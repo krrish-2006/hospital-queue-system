@@ -524,8 +524,8 @@
     .queue-badge {
         padding: 8px 12px;
         border-radius: 999px;
-        background: rgba(15, 23, 32, 0.05);
-        color: var(--muted);
+        background: rgba(15, 23, 32, 0.9);
+        color: #ffffff;
         font-size: 0.86rem;
         width: fit-content;
     }
@@ -743,11 +743,9 @@ async function refreshBookingState() {
 function updateBookingUI() {
     const hasBooking = userBookings.length > 0;
     const bookBtn = document.getElementById("bookBtn");
-    const doctorSelect = document.getElementById("doctor");
     const result = document.getElementById("result");
 
     bookBtn.disabled = hasBooking;
-    doctorSelect.disabled = hasBooking;
 
     if (hasBooking) {
         result.innerText = "Booking already active.";
