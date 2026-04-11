@@ -192,14 +192,19 @@
     }
 
     .brand-mark {
-        width: 46px;
-        height: 46px;
-        border-radius: 14px;
-        display: grid;
-        place-items: center;
-        background: linear-gradient(135deg, #111827, #334155);
-        color: white;
-        font-weight: 700;
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        overflow: hidden;
+        flex-shrink: 0;
+        box-shadow: 0 10px 20px rgba(15, 23, 32, 0.12);
+    }
+
+    .brand-mark img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
     }
 
     .brand small {
@@ -714,7 +719,9 @@
 
             <aside class="login-panel">
                 <div class="brand">
-                    <div class="brand-mark">HQ</div>
+                    <div class="brand-mark">
+                        <img src="medical-app-logo.png" alt="Book My Doctor logo">
+                    </div>
                     <div>
                         <strong>Book My Doctor</strong>
                         <small>Smart access for patients and staff</small>
@@ -736,7 +743,9 @@
                 <section class="app-hero">
                     <div class="app-nav">
                         <div class="app-nav-brand">
-                            <div class="brand-mark">HQ</div>
+                            <div class="brand-mark">
+                                <img src="medical-app-logo.png" alt="Book My Doctor logo">
+                            </div>
                             <div>
                                 <strong>Book My Doctor</strong>
                                 <span id="userBadge">Not signed in</span>
