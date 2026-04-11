@@ -23,6 +23,18 @@
         --yellow: #facc15;
     }
 
+    [data-theme="dark"] {
+        --bg: #0f172a;
+        --panel: rgba(15, 23, 42, 0.72);
+        --panel-solid: #111827;
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --line: rgba(148, 163, 184, 0.16);
+        --shadow: 0 24px 60px rgba(2, 6, 23, 0.45);
+        --blue: #60a5fa;
+        --blue-deep: #93c5fd;
+    }
+
     * {
         box-sizing: border-box;
     }
@@ -36,6 +48,13 @@
             radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 30%),
             radial-gradient(circle at top right, rgba(15, 23, 32, 0.08), transparent 24%),
             linear-gradient(180deg, #fbfbfc 0%, #eef1f5 100%);
+    }
+
+    [data-theme="dark"] body {
+        background:
+            radial-gradient(circle at top left, rgba(96, 165, 250, 0.1), transparent 30%),
+            radial-gradient(circle at top right, rgba(15, 23, 42, 0.3), transparent 24%),
+            linear-gradient(180deg, #020617 0%, #0f172a 100%);
     }
 
     body::before,
@@ -227,6 +246,23 @@
         box-shadow: 0 16px 32px rgba(17, 24, 39, 0.18);
     }
 
+    .theme-toggle {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(15, 23, 32, 0.08);
+        color: var(--text);
+        box-shadow: 0 14px 32px rgba(15, 23, 32, 0.12);
+        padding: 0;
+    }
+
+    .brand .theme-toggle {
+        margin-left: auto;
+    }
+
     .google-button:hover {
         transform: translateY(-1px);
         background: #0b1220;
@@ -359,6 +395,55 @@
     .queue-panel {
         min-height: 100%;
         background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(244, 247, 250, 0.82));
+    }
+
+    [data-theme="dark"] .hero-panel,
+    [data-theme="dark"] .login-panel,
+    [data-theme="dark"] .card,
+    [data-theme="dark"] .app-hero,
+    [data-theme="dark"] .booking-panel,
+    [data-theme="dark"] .queue-panel {
+        border-color: rgba(148, 163, 184, 0.14);
+        background: linear-gradient(180deg, rgba(15, 23, 42, 0.86), rgba(15, 23, 42, 0.72));
+    }
+
+    [data-theme="dark"] .login-card,
+    [data-theme="dark"] .booking-meta,
+    [data-theme="dark"] .queue-surface,
+    [data-theme="dark"] .queue-item,
+    [data-theme="dark"] .pill,
+    [data-theme="dark"] .theme-toggle,
+    [data-theme="dark"] .logout-btn {
+        background: rgba(15, 23, 42, 0.9);
+        border-color: rgba(148, 163, 184, 0.14);
+        color: var(--text);
+    }
+
+    [data-theme="dark"] .queue-item.now {
+        background: linear-gradient(180deg, rgba(37, 99, 235, 0.28), rgba(15, 23, 42, 0.92));
+        border-color: rgba(96, 165, 250, 0.22);
+    }
+
+    [data-theme="dark"] input,
+    [data-theme="dark"] select {
+        background: rgba(15, 23, 42, 0.82);
+        border-color: rgba(148, 163, 184, 0.16);
+        color: var(--text);
+    }
+
+    [data-theme="dark"] .empty-state {
+        background: rgba(15, 23, 42, 0.76);
+        border-color: rgba(148, 163, 184, 0.14);
+    }
+
+    [data-theme="dark"] .hero-copy p,
+    [data-theme="dark"] .name-line span {
+        color: var(--muted);
+    }
+
+    [data-theme="dark"] .queue-badge {
+        background: rgba(248, 250, 252, 0.95);
+        color: #020617;
     }
 
     .title {
@@ -634,6 +719,7 @@
                         <strong>Hospital Queue</strong>
                         <small>Smart access for patients and staff</small>
                     </div>
+                    <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode" title="Toggle dark mode">☾</button>
                 </div>
 
                 <div class="login-card">
@@ -657,6 +743,7 @@
                             </div>
                         </div>
                         <div class="app-nav-actions">
+                            <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode" title="Toggle dark mode">☾</button>
                             <button class="logout-btn" onclick="logout()">Logout</button>
                         </div>
                     </div>
@@ -715,6 +802,22 @@
 const API = "https://hospital-queue-system-ypl0.onrender.com";
 const DOCTOR_EMAIL = "krrishjgd@gmail.com";
 let userBookings = [];
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+
+    document.querySelectorAll(".theme-toggle").forEach((button) => {
+        button.innerText = theme === "dark" ? "☀" : "☾";
+    });
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
+    const nextTheme = currentTheme === "dark" ? "light" : "dark";
+
+    localStorage.setItem("theme", nextTheme);
+    applyTheme(nextTheme);
+}
 
 function loginGoogle() {
     window.location.href = `${API}/auth/google`;
@@ -927,6 +1030,7 @@ function logout() {
     });
 }
 
+applyTheme(localStorage.getItem("theme") || "light");
 checkUser();
 </script>
 </body>
